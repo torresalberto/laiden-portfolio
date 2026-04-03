@@ -5,36 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0a0a0a">
   <title>laiden</title>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'GA_MEASUREMENT_ID');
+  </script>
+  <script>
+    function trackEvent(action, category, label) {
+      if (typeof gtag !== 'undefined') {
+        gtag('event', action, { event_category: category, event_label: label });
+      }
+    }
+  </script>
   <link rel="preload" as="image" href="public/images/001_laiden.jpg">
-  <link rel="preload" as="image" href="public/images/002_laiden.jpg">
-  <link rel="preload" as="image" href="public/images/003_laiden.jpg">
+  <link rel="preload" as="image" href="public/images/011_laiden.jpg">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    
+
     :root {
       --void: #0a0a0a;
-      --charcoal: #1a1a1a;
       --ember: #c4785a;
       --ember-glow: rgba(196, 120, 90, 0.35);
-      --gold: #a08060;
-      --rose: #806060;
-      --ocean: #0a2a3a;
       --steel: #00a0c0;
-      --fog: #606060;
-      --bone: #e0e0e0;
-      --ui-subtle: rgba(255, 255, 255, 0.15);
-      --ui-visible: rgba(255, 255, 255, 0.35);
+      --steel-glow: rgba(0, 160, 192, 0.35);
       --fade-duration: 1200ms;
-      --kenburns-duration: 10000ms;
-      --ui-transition: 400ms;
       --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-      --ease-gentle: cubic-bezier(0.25, 0.1, 0.25, 1);
+      --kenburns-duration: 12000ms;
       --ease-breathe: cubic-bezier(0.37, 0, 0.63, 1);
       --contact-size: 48px;
-      --contact-size-mobile: 56px;
-      --dot-size: 5px;
-      --dot-active-size: 7px;
-      --dot-gap: 10px;
       --bottom-padding: 40px;
     }
 
@@ -43,24 +44,60 @@
       height: 100%;
       overflow: hidden;
       background: var(--void);
-      font-family: system-ui, sans-serif;
     }
 
-    .gallery {
+    .split-container {
       position: fixed;
       inset: 0;
-      background: var(--void);
+      display: flex;
+    }
+
+    .split-side {
+      flex: 1;
+      position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
+      overflow: hidden;
     }
 
-    .slides {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      max-width: 100vw;
-      max-height: 100vh;
+    .split-side.warm { background: var(--void); }
+    .split-side.cool { background: var(--void); }
+
+    .split-side.warm::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(196, 120, 90, 0.03);
+      pointer-events: none;
+    }
+
+    .split-side.cool::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(10, 42, 58, 0.05);
+      pointer-events: none;
+    }
+
+    .divider {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.06);
+      z-index: 10;
+      transform: translateX(-50%);
+      transition: box-shadow 600ms var(--ease-smooth);
+    }
+
+    .divider.glow-warm {
+      box-shadow: 0 0 20px rgba(196, 120, 90, 0.3), 0 0 40px rgba(196, 120, 90, 0.15);
+    }
+
+    .divider.glow-cool {
+      box-shadow: 0 0 20px rgba(0, 160, 192, 0.3), 0 0 40px rgba(0, 160, 192, 0.15);
     }
 
     .slide {
@@ -74,68 +111,62 @@
       pointer-events: none;
     }
 
-    .slide.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
+    .slide.active { opacity: 1; pointer-events: auto; }
 
     .slide img {
-      max-width: 100%;
-      max-height: 100%;
-      width: auto;
-      height: auto;
+      max-width: 90%;
+      max-height: 90%;
       object-fit: contain;
-      transform: scale(1);
-      animation: kenburns var(--kenburns-duration) var(--ease-breathe) infinite;
     }
 
-    .slide.active img {
-      animation-play-state: running;
+    .slide.flash-warm { animation: flashWarm 400ms ease forwards; }
+    .slide.flash-cool { animation: flashCool 400ms ease forwards; }
+
+    @keyframes flashWarm {
+      0% { background: rgba(196, 120, 90, 0.15); }
+      100% { background: transparent; }
     }
 
-    @keyframes kenburns {
-      0% { transform: scale(1); }
-      100% { transform: scale(1.015); }
+    @keyframes flashCool {
+      0% { background: rgba(0, 160, 192, 0.15); }
+      100% { background: transparent; }
     }
 
-    .progress {
+    .progress-dots {
       position: fixed;
       bottom: var(--bottom-padding);
-      left: 50%;
-      transform: translateX(-50%);
       display: flex;
-      gap: var(--dot-gap);
-      z-index: 10;
+      gap: 8px;
+      z-index: 20;
       padding: 10px;
     }
 
+    .progress-dots.warm-dots { left: 20px; }
+    .progress-dots.cool-dots { right: 20px; }
+
     .dot {
-      width: var(--dot-size);
-      height: var(--dot-size);
+      width: 5px;
+      height: 5px;
       border-radius: 50%;
-      background: var(--ui-subtle);
       border: none;
       cursor: pointer;
       transition: all 300ms var(--ease-smooth);
       padding: 0;
     }
 
-    .dot:hover {
-      background: var(--ui-visible);
-      transform: scale(1.2);
-    }
+    .dot.warm { background: rgba(196, 120, 90, 0.2); }
+    .dot.warm:hover { background: rgba(196, 120, 90, 0.35); }
+    .dot.warm.active { background: rgba(196, 120, 90, 0.5); box-shadow: 0 0 6px rgba(196, 120, 90, 0.3); }
 
-    .dot.active {
-      width: var(--dot-active-size);
-      height: var(--dot-active-size);
-      background: var(--ui-visible);
-      box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
-    }
+    .dot.cool { background: rgba(0, 160, 192, 0.2); }
+    .dot.cool:hover { background: rgba(0, 160, 192, 0.35); }
+    .dot.cool.active { background: rgba(0, 160, 192, 0.5); box-shadow: 0 0 6px rgba(0, 160, 192, 0.3); }
 
     .contact {
       position: fixed;
       bottom: var(--bottom-padding);
-      right: var(--bottom-padding);
+      left: 50%;
+      transform: translateX(-50%);
       width: var(--contact-size);
       height: var(--contact-size);
       border-radius: 50%;
@@ -145,8 +176,8 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all var(--ui-transition) var(--ease-smooth);
-      z-index: 20;
+      transition: all 400ms var(--ease-smooth);
+      z-index: 30;
       text-decoration: none;
     }
 
@@ -154,7 +185,7 @@
       background: var(--ember);
       border-color: var(--ember);
       box-shadow: 0 0 24px var(--ember-glow);
-      transform: scale(1.08);
+      transform: translateX(-50%) scale(1.08);
     }
 
     .contact svg {
@@ -163,34 +194,128 @@
       stroke: rgba(255, 255, 255, 0.5);
       fill: none;
       stroke-width: 1.5;
-      transition: stroke var(--ui-transition) var(--ease-smooth);
     }
 
-    .contact:hover svg {
-      stroke: #fff;
+    .contact:hover svg { stroke: #fff; }
+
+    .current-indicator {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: rgba(255, 255, 255, 0.08);
+      text-transform: uppercase;
+      z-index: 20;
+      font-family: 'Helvetica Neue', sans-serif;
+      font-weight: 300;
+    }
+
+    .ambient-glow {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 800ms var(--ease-smooth);
+      z-index: 1;
+    }
+
+    .ambient-glow.warm {
+      background: radial-gradient(circle at 50% 50%, var(--ember-glow) 0%, transparent 60%);
+    }
+
+    .ambient-glow.cool {
+      background: radial-gradient(circle at 50% 50%, var(--steel-glow) 0%, transparent 60%);
+    }
+
+    .ambient-glow.active { opacity: 1; }
+
+    #particle-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .divider.pulse {
+      animation: dividerPulse 800ms var(--ease-smooth) forwards;
+    }
+
+    @keyframes dividerPulse {
+      0% { width: 1px; }
+      50% { width: 2px; }
+      100% { width: 1px; }
     }
 
     @media (max-width: 768px) {
-      :root {
-        --contact-size: var(--contact-size-mobile);
-        --dot-size: 4px;
-        --dot-active-size: 6px;
-        --bottom-padding: 60px;
+      :root { --contact-size: 56px; --bottom-padding: 60px; }
+      
+      .split-container {
+        flex-direction: column;
       }
-
+      
+      .split-side {
+        flex: 1;
+        min-height: 50%;
+      }
+      
+      .divider {
+        left: 0;
+        right: 0;
+        top: 50%;
+        width: auto;
+        height: 1px;
+        transform: translateY(-50%);
+      }
+      
+      .divider.pulse {
+        animation: dividerPulseHorizontal 800ms var(--ease-smooth) forwards;
+      }
+      
+      @keyframes dividerPulseHorizontal {
+        0% { height: 1px; }
+        50% { height: 2px; }
+        100% { height: 1px; }
+      }
+      
+      .progress-dots { bottom: 50px; }
+      .progress-dots.warm-dots { left: 10px; top: calc(50% - 20px); bottom: auto; }
+      .progress-dots.cool-dots { right: 10px; top: calc(50% - 20px); bottom: auto; }
+      .dot { width: 4px; height: 4px; }
+      
       .slide img {
-        animation-duration: 8000ms;
+        max-width: 95%;
+        max-height: 85%;
       }
+      
+      .current-indicator {
+        top: 12px;
+        font-size: 10px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      :root { --contact-size: 48px; --bottom-padding: 50px; }
+      .current-indicator { font-size: 9px; letter-spacing: 3px; }
     }
   </style>
 </head>
 <body>
-  <main class="gallery" role="main">
-    <div class="slides"></div>
-  </main>
-  
-  <nav class="progress" role="navigation" aria-label="Image navigation"></nav>
-  
+  <canvas id="particle-canvas"></canvas>
+  <div class="split-container">
+    <div class="split-side warm">
+      <div class="ambient-glow warm"></div>
+    </div>
+    <div class="split-side cool">
+      <div class="ambient-glow cool"></div>
+    </div>
+    <div class="divider"></div>
+  </div>
+  <div class="warm-dots progress-dots"></div>
+  <div class="cool-dots progress-dots"></div>
+  <div class="current-indicator"><span id="current-label">warm</span></div>
+
   <a href="https://instagram.com/laiden" class="contact" aria-label="Send message on Instagram" target="_blank" rel="noopener">
     <svg viewBox="0 0 24 24">
       <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
@@ -199,253 +324,428 @@
 
   <script>
     const images = [
-      'public/images/001_laiden.jpg',
-      'public/images/002_laiden.jpg',
-      'public/images/003_laiden.jpg',
-      'public/images/004_laiden.jpg',
-      'public/images/005_laiden.jpg',
-      'public/images/006_laiden.jpg',
-      'public/images/007_laiden.jpg',
-      'public/images/008_laiden.jpg',
-      'public/images/009_laiden.jpg',
-      'public/images/010_laiden.jpg',
-      'public/images/011_laiden.jpg',
-      'public/images/012_laiden.jpg',
-      'public/images/013_laiden.jpg',
-      'public/images/014_laiden.jpg',
-      'public/images/015_laiden.jpg',
-      'public/images/016_laiden.jpg',
-      'public/images/017_laiden.jpg',
-      'public/images/018_laiden.jpg',
-      'public/images/019_laiden.jpg',
-      'public/images/020_laiden.jpg',
-      'public/images/021_laiden.jpg',
-      'public/images/022_laiden.jpg',
-      'public/images/023_laiden.jpg',
-      'public/images/024_laiden.jpg',
-      'public/images/025_laiden.jpg',
-      'public/images/026_laiden.jpg',
-      'public/images/027_laiden.png',
-      'public/images/028_laiden.png',
-      'public/images/029_laiden.png',
-      'public/images/030_laiden.png',
-      'public/images/031_laiden.png',
-      'public/images/032_laiden.png',
-      'public/images/033_laiden.png',
-      'public/images/034_laiden.png',
-      'public/images/035_laiden.png',
-      'public/images/036_laiden.png',
-      'public/images/037_laiden.png',
-      'public/images/038_laiden.png',
-      'public/images/039_laiden.png'
+      'public/images/001_laiden.jpg', 'public/images/002_laiden.jpg', 'public/images/003_laiden.jpg',
+      'public/images/004_laiden.jpg', 'public/images/005_laiden.jpg', 'public/images/006_laiden.jpg',
+      'public/images/007_laiden.jpg', 'public/images/008_laiden.jpg', 'public/images/009_laiden.jpg',
+      'public/images/010_laiden.jpg', 'public/images/011_laiden.jpg', 'public/images/012_laiden.jpg',
+      'public/images/013_laiden.jpg', 'public/images/014_laiden.jpg', 'public/images/015_laiden.jpg',
+      'public/images/016_laiden.jpg', 'public/images/017_laiden.jpg', 'public/images/018_laiden.jpg',
+      'public/images/019_laiden.jpg', 'public/images/020_laiden.jpg', 'public/images/021_laiden.jpg',
+      'public/images/022_laiden.jpg', 'public/images/023_laiden.jpg', 'public/images/024_laiden.jpg',
+      'public/images/025_laiden.jpg', 'public/images/026_laiden.jpg', 'public/images/027_laiden.png',
+      'public/images/028_laiden.png', 'public/images/029_laiden.png', 'public/images/030_laiden.png',
+      'public/images/031_laiden.png', 'public/images/032_laiden.png', 'public/images/033_laiden.png',
+      'public/images/034_laiden.png', 'public/images/035_laiden.png', 'public/images/036_laiden.png',
+      'public/images/037_laiden.png', 'public/images/038_laiden.png', 'public/images/039_laiden.png'
     ];
 
+    const warmthData = [
+      1.15, 1.03, 1.46, 1.01, 2.92, 1.01, 3.77, 1.84, 3.90, 6.12, 0.13, 0.21, 0.41, 1.56,
+      0.14, 2.51, 0.41, 1.83, 0.30, 0.13, 1.18, 0.46, 0.17, 0.40, 0.57, 0.72, 1.50, 3.29,
+      2.75, 1.11, 0.34, 0.73, 2.18, 1.03, 0.10, 0.32, 0.92, 0.69, 1.07
+    ];
+
+    const warmImages = images.filter((_, i) => warmthData[i] > 1.0);
+    const coolImages = images.filter((_, i) => warmthData[i] <= 1.0);
+    const warmIndices = images.map((_, i) => i).filter(i => warmthData[i] > 1.0);
+    const coolIndices = images.map((_, i) => i).filter(i => warmthData[i] <= 1.0);
+
+    const brightnessData = [
+      68, 52, 95, 49, 99, 45, 106, 79, 112, 118, 42, 38, 44, 74,
+      40, 88, 46, 81, 43, 39, 61, 47, 41, 44, 48, 54, 71, 96,
+      90, 58, 43, 52, 83, 59, 37, 42, 55, 51, 63
+    ];
+
+    const warmBrightness = images.map((_, i) => brightnessData[i]).filter((_, i) => warmthData[i] > 1.0);
+    const coolBrightness = images.map((_, i) => brightnessData[i]).filter((_, i) => warmthData[i] <= 1.0);
+
+    function getKenBurnsDuration(brightness) {
+      const minDuration = 8000;
+      const maxDuration = 16000;
+      return minDuration + (brightness / 255) * (maxDuration - minDuration);
+    }
+
     const state = {
-      currentIndex: 0,
+      warmIndex: 0,
+      coolIndex: 0,
+      currentSide: 'warm',
       isTransitioning: false,
       autoAdvanceTimer: null,
-      isPaused: false,
-      lastInteractionTime: 0
+      isPaused: false
     };
 
-    const isMobile = () => window.innerWidth < 768;
-    const getInterval = () => isMobile() ? 8000 : 6000;
+    const warmContainer = document.querySelector('.split-side.warm');
+    const coolContainer = document.querySelector('.split-side.cool');
+    const divider = document.querySelector('.divider');
+    const warmDots = document.querySelector('.warm-dots');
+    const coolDots = document.querySelector('.cool-dots');
+    const currentLabel = document.getElementById('current-label');
+    const warmGlow = document.querySelector('.ambient-glow.warm');
+    const coolGlow = document.querySelector('.ambient-glow.cool');
 
-    const slidesContainer = document.querySelector('.slides');
-    const progressContainer = document.querySelector('.progress');
+    let particles = [];
+    const PARTICLE_COUNT = 40;
+    let particleCtx, particleCanvas;
+    let animationId;
+
+    function initParticles() {
+      particleCanvas = document.getElementById('particle-canvas');
+      particleCtx = particleCanvas.getContext('2d');
+      resizeParticleCanvas();
+      window.addEventListener('resize', resizeParticleCanvas);
+
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        particles.push({
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+          vx: (Math.random() - 0.5) * 0.3,
+          vy: (Math.random() - 0.5) * 0.3,
+          size: Math.random() * 2 + 1,
+          alpha: Math.random() * 0.3 + 0.1,
+          pulse: Math.random() * Math.PI * 2
+        });
+      }
+      animateParticles();
+    }
+
+    function resizeParticleCanvas() {
+      particleCanvas.width = window.innerWidth;
+      particleCanvas.height = window.innerHeight;
+    }
+
+    function animateParticles() {
+      particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+      
+      const isWarm = state.currentSide === 'warm';
+      const baseColor = isWarm ? { r: 196, g: 120, b: 90 } : { r: 0, g: 160, b: 192 };
+
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.pulse += 0.02;
+
+        if (p.x < 0) p.x = particleCanvas.width;
+        if (p.x > particleCanvas.width) p.x = 0;
+        if (p.y < 0) p.y = particleCanvas.height;
+        if (p.y > particleCanvas.height) p.y = 0;
+
+        const alpha = p.alpha * (0.7 + 0.3 * Math.sin(p.pulse));
+        particleCtx.beginPath();
+        particleCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        particleCtx.fillStyle = `rgba(${baseColor.r}, ${baseColor.g}, ${baseColor.b}, ${alpha})`;
+        particleCtx.fill();
+      });
+
+      animationId = requestAnimationFrame(animateParticles);
+    }
+
+    function updateParticleColors() {
+      // Colors update automatically via state.currentSide check in animateParticles
+    }
 
     function buildSlides() {
-      images.forEach((src, i) => {
+      warmImages.forEach((src, i) => {
+        const slide = document.createElement('div');
+        const duration = getKenBurnsDuration(warmBrightness[i]);
+        slide.className = 'slide' + (i === 0 ? ' active' : '');
+        slide.innerHTML = `<img src="${src}" alt="" loading="${i < 2 ? 'eager' : 'lazy'}" style="animation: kenburns ${duration} var(--ease-breathe) infinite;">`;
+        warmContainer.appendChild(slide);
+      });
+
+      coolImages.forEach((src, i) => {
         const slide = document.createElement('div');
         slide.className = 'slide' + (i === 0 ? ' active' : '');
-        slide.innerHTML = `<img src="${src}" alt="" loading="${i < 3 ? 'eager' : 'lazy'}">`;
-        slidesContainer.appendChild(slide);
+        slide.innerHTML = `<img src="${src}" alt="" loading="${i < 2 ? 'eager' : 'lazy'}">`;
+        coolContainer.appendChild(slide);
       });
     }
 
     function buildDots() {
-      images.forEach((_, i) => {
+      warmIndices.forEach((_, i) => {
         const dot = document.createElement('button');
-        dot.className = 'dot' + (i === 0 ? ' active' : '');
-        dot.setAttribute('aria-label', `Go to image ${i + 1}`);
-        dot.addEventListener('click', () => goTo(i));
-        progressContainer.appendChild(dot);
+        dot.className = 'dot warm' + (i === 0 ? ' active' : '');
+        dot.addEventListener('click', () => goToWarm(i));
+        warmDots.appendChild(dot);
+      });
+
+      coolIndices.forEach((_, i) => {
+        const dot = document.createElement('button');
+        dot.className = 'dot cool' + (i === 0 ? ' active' : '');
+        dot.addEventListener('click', () => goToCool(i));
+        coolDots.appendChild(dot);
       });
     }
 
-    function getSlides() { return slidesContainer.querySelectorAll('.slide'); }
-    function getDots() { return progressContainer.querySelectorAll('.dot'); }
+    function getWarmSlides() { return warmContainer.querySelectorAll('.slide'); }
+    function getCoolSlides() { return coolContainer.querySelectorAll('.slide'); }
+    function getWarmDots() { return warmDots.querySelectorAll('.dot'); }
+    function getCoolDots() { return coolDots.querySelectorAll('.dot'); }
 
-    function showSlide(index) {
-      if (state.isTransitioning) return;
+    function updateDivider(side) {
+      divider.classList.remove('glow-warm', 'glow-cool');
+      divider.classList.add(side === 'warm' ? 'glow-warm' : 'glow-cool');
+      currentLabel.textContent = 'laiden';
+    }
+
+    function trackSideChange(newSide) {
+      trackEvent('side_change', 'navigation', newSide);
+    }
+
+    function showWarm(index) {
+      if (state.isTransitioning && state.currentSide === 'warm') return;
       state.isTransitioning = true;
 
-      const slides = getSlides();
-      const dots = getDots();
+      const slides = getWarmSlides();
+      const dots = getWarmDots();
 
-      slides.forEach((s, i) => {
-        s.classList.toggle('active', i === index);
-        if (i === index) {
-          const img = s.querySelector('img');
-          if (!img.complete) {
-            img.addEventListener('load', () => {}, { once: true });
-          }
-        }
-      });
-
+      slides.forEach((s, i) => s.classList.toggle('active', i === index));
       dots.forEach((d, i) => d.classList.toggle('active', i === index));
 
-      state.currentIndex = index;
-      preloadAdjacent(2);
+      slides[index].classList.add('flash-warm');
+      setTimeout(() => slides[index].classList.remove('flash-warm'), 400);
 
-      setTimeout(() => {
-        state.isTransitioning = false;
-      }, 1200);
+      warmGlow.classList.add('active');
+      coolGlow.classList.remove('active');
+
+      divider.classList.remove('glow-cool');
+      divider.classList.add('glow-warm', 'pulse');
+      setTimeout(() => divider.classList.remove('pulse'), 800);
+
+      state.warmIndex = index;
+      state.currentSide = 'warm';
+      trackSideChange('warm');
+      preloadAdjacent();
+      trackEvent('slide_change', 'navigation', 'warm_' + index);
+
+      setTimeout(() => { state.isTransitioning = false; }, 1200);
     }
 
-    function next() {
-      const nextIndex = (state.currentIndex + 1) % images.length;
-      showSlide(nextIndex);
+    function showCool(index) {
+      if (state.isTransitioning && state.currentSide === 'cool') return;
+      state.isTransitioning = true;
+
+      const slides = getCoolSlides();
+      const dots = getCoolDots();
+
+      slides.forEach((s, i) => s.classList.toggle('active', i === index));
+      dots.forEach((d, i) => d.classList.toggle('active', i === index));
+
+      slides[index].classList.add('flash-cool');
+      setTimeout(() => slides[index].classList.remove('flash-cool'), 400);
+
+      coolGlow.classList.add('active');
+      warmGlow.classList.remove('active');
+
+      divider.classList.remove('glow-warm');
+      divider.classList.add('glow-cool', 'pulse');
+      setTimeout(() => divider.classList.remove('pulse'), 800);
+
+      state.coolIndex = index;
+      state.currentSide = 'cool';
+      trackSideChange('cool');
+      preloadAdjacent();
+      trackEvent('slide_change', 'navigation', 'cool_' + index);
+
+      setTimeout(() => { state.isTransitioning = false; }, 1200);
+    }
+
+    function nextWarm() {
+      showWarm((state.warmIndex + 1) % warmImages.length);
+    }
+
+    function prevWarm() {
+      showWarm((state.warmIndex - 1 + warmImages.length) % warmImages.length);
+    }
+
+    function nextCool() {
+      showCool((state.coolIndex + 1) % coolImages.length);
+    }
+
+    function prevCool() {
+      showCool((state.coolIndex - 1 + coolImages.length) % coolImages.length);
+    }
+
+    function goToWarm(index) {
+      showWarm(index);
       resetAutoAdvance();
     }
 
-    function prev() {
-      const prevIndex = (state.currentIndex - 1 + images.length) % images.length;
-      showSlide(prevIndex);
+    function goToCool(index) {
+      showCool(index);
       resetAutoAdvance();
     }
 
-    function goTo(index) {
-      if (index !== state.currentIndex) {
-        showSlide(index);
-        resetAutoAdvance();
-      }
-    }
+    function preloadAdjacent() {
+      const nextWarm = (state.warmIndex + 1) % warmImages.length;
+      const prevWarm = (state.warmIndex - 1 + warmImages.length) % warmImages.length;
+      const nextCool = (state.coolIndex + 1) % coolImages.length;
+      const prevCool = (state.coolIndex - 1 + coolImages.length) % coolImages.length;
 
-    function isFirst() { return state.currentIndex === 0; }
-    function isLast() { return state.currentIndex === images.length - 1; }
-
-    function preloadAdjacent(count) {
-      for (let i = 1; i <= count; i++) {
-        const nextIdx = (state.currentIndex + i) % images.length;
-        const prevIdx = (state.currentIndex - i + images.length) % images.length;
-        new Image().src = images[nextIdx];
-        if (i > 1) new Image().src = images[prevIdx];
-      }
+      new Image().src = warmImages[nextWarm];
+      new Image().src = warmImages[prevWarm];
+      new Image().src = coolImages[nextCool];
+      new Image().src = coolImages[prevCool];
     }
 
     function startAutoAdvance() {
       stopAutoAdvance();
-      state.autoAdvanceTimer = setInterval(next, getInterval());
+      state.autoAdvanceTimer = setInterval(() => {
+        if (state.currentSide === 'warm') nextCool();
+        else nextWarm();
+      }, 6000);
     }
 
     function stopAutoAdvance() {
-      if (state.autoAdvanceTimer) {
-        clearInterval(state.autoAdvanceTimer);
-        state.autoAdvanceTimer = null;
-      }
+      if (state.autoAdvanceTimer) { clearInterval(state.autoAdvanceTimer); state.autoAdvanceTimer = null; }
     }
 
-    function pauseAutoAdvance() {
-      state.isPaused = true;
-      stopAutoAdvance();
-    }
-
-    function resumeAutoAdvance() {
-      state.isPaused = false;
-      startAutoAdvance();
-    }
+    function pauseAutoAdvance() { state.isPaused = true; stopAutoAdvance(); }
+    function resumeAutoAdvance() { state.isPaused = false; startAutoAdvance(); }
 
     function resetAutoAdvance() {
-      state.lastInteractionTime = Date.now();
       stopAutoAdvance();
-      setTimeout(() => {
-        if (!state.isPaused) startAutoAdvance();
-      }, 3000);
+      setTimeout(() => { if (!state.isPaused) startAutoAdvance(); }, 3000);
     }
 
     let scrollTimeout;
     function handleScroll(e) {
+      const isMobile = window.innerWidth < 768;
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(() => {
-        if (e.deltaY > 0) next();
-        else prev();
+        if (isMobile) {
+          if (e.deltaX !== 0) {
+            if (state.currentSide === 'warm') e.deltaX > 0 ? nextWarm() : prevWarm();
+            else e.deltaX > 0 ? nextCool() : prevCool();
+          }
+        } else {
+          if (state.currentSide === 'warm') e.deltaY > 0 ? nextWarm() : prevWarm();
+          else e.deltaY > 0 ? nextCool() : prevCool();
+        }
       }, 800);
     }
 
     let touchStartX = 0;
     let touchStartY = 0;
-
-    function handleTouchStart(e) {
+    function handleTouchStart(e) { 
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
-      pauseAutoAdvance();
+      pauseAutoAdvance(); 
     }
 
     function handleTouchEnd(e) {
-      const touchEndX = e.changedTouches[0].clientX;
-      const touchEndY = e.changedTouches[0].clientY;
-      const dx = touchEndX - touchStartX;
-      const dy = touchEndY - touchStartY;
-      const threshold = isMobile() ? 40 : 50;
-
-      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
-        if (dx > 0) prev();
-        else next();
+      const isMobile = window.innerWidth < 768;
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      const threshold = window.innerWidth < 768 ? 40 : 50;
+      
+      if (isMobile) {
+        if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > threshold) {
+          if (state.currentSide === 'warm') dy > 0 ? prevWarm() : nextWarm();
+          else dy > 0 ? prevCool() : nextCool();
+        } else if (Math.abs(dx) > threshold) {
+          if (state.currentSide === 'warm') showCool(state.coolIndex);
+          else showWarm(state.warmIndex);
+        }
+      } else {
+        if (Math.abs(dx) > threshold) {
+          if (state.currentSide === 'warm') dx > 0 ? prevWarm() : nextWarm();
+          else dx > 0 ? prevCool() : nextCool();
+        }
       }
-
       setTimeout(resumeAutoAdvance, 3000);
     }
 
     function handleClick(e) {
-      const x = e.clientX;
-      const width = window.innerWidth;
+      if (e.target.closest('.contact') || e.target.closest('.progress-dots')) return;
       
-      if (x > width * 0.4) next();
-      else prev();
+      const isMobile = window.innerWidth < 768;
+      const x = e.clientX;
+      const y = e.clientY;
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      
+      if (isMobile) {
+        const third = height / 3;
+        if (y < third) {
+          if (state.currentSide === 'warm') prevWarm();
+          else prevCool();
+        } else if (y > third * 2) {
+          if (state.currentSide === 'warm') nextWarm();
+          else nextCool();
+        } else {
+          if (state.currentSide === 'warm') showCool(state.coolIndex);
+          else showWarm(state.warmIndex);
+        }
+      } else {
+        const center = width * 0.4;
+        const rightCenter = width * 0.6;
+  
+        if (x < center) {
+          if (state.currentSide === 'warm') prevWarm();
+          else prevCool();
+        } else if (x > rightCenter) {
+          if (state.currentSide === 'warm') nextWarm();
+          else nextCool();
+        } else {
+          if (state.currentSide === 'warm') showCool(state.coolIndex);
+          else showWarm(state.warmIndex);
+        }
+      }
     }
 
     function handleKey(e) {
-      switch(e.key) {
-        case 'ArrowRight':
-        case ' ':
-          e.preventDefault();
-          next();
-          break;
-        case 'ArrowLeft':
-          e.preventDefault();
-          prev();
-          break;
-        case 'Home':
-          e.preventDefault();
-          goTo(0);
-          break;
-        case 'End':
-          e.preventDefault();
-          goTo(images.length - 1);
-          break;
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        if (state.currentSide === 'warm') nextWarm();
+        else nextCool();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (state.currentSide === 'warm') prevWarm();
+        else prevCool();
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        if (state.currentSide === 'warm') showCool(state.coolIndex);
+        else showWarm(state.warmIndex);
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        showWarm(0);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        showCool(coolImages.length - 1);
       }
     }
 
     function init() {
+      initParticles();
       buildSlides();
       buildDots();
-      preloadAdjacent(2);
-      showSlide(0);
+      preloadFirstThree();
+      preloadAdjacent();
+      updateDivider('warm');
+      warmGlow.classList.add('active');
       startAutoAdvance();
-
-      const gallery = document.querySelector('.gallery');
-      gallery.addEventListener('click', handleClick);
-      document.addEventListener('keydown', handleKey);
       
+      trackEvent('page_view', 'engagement', 'portfolio_loaded');
+
+      document.addEventListener('click', handleClick);
+      document.addEventListener('keydown', handleKey);
       document.addEventListener('touchstart', handleTouchStart, { passive: true });
       document.addEventListener('touchend', handleTouchEnd, { passive: true });
-      
       document.addEventListener('wheel', handleScroll, { passive: true });
 
       const contact = document.querySelector('.contact');
+      contact.addEventListener('click', () => trackEvent('contact_click', 'conversion', 'instagram_dm'));
       contact.addEventListener('mouseenter', pauseAutoAdvance);
       contact.addEventListener('mouseleave', resumeAutoAdvance);
+    }
+
+    function preloadFirstThree() {
+      for (let i = 0; i < 3 && i < warmImages.length; i++) {
+        new Image().src = warmImages[i];
+      }
+      for (let i = 0; i < 3 && i < coolImages.length; i++) {
+        new Image().src = coolImages[i];
+      }
     }
 
     init();
