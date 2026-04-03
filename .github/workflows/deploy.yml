@@ -1,4 +1,6 @@
-name: Deploy to Hosting
+# This workflow deploys your site to a shared hosting server via FTP
+
+name: Deploy Website
 
 on:
   push:
@@ -7,22 +9,16 @@ on:
 
 jobs:
   deploy:
+    name: Deploy to FTP
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Get latest code
+      uses: actions/checkout@v4
 
-      - name: Setup FTP
-        run: |
-          echo "Configuring FTP deployment..."
-          
-      - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local_dir: ./
-          port: 21
-          forcedotnet: true
-          secret: true
+    - name: Sync files to server
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        server-dir: /
