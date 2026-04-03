@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>laiden</title>
+  <link rel="preload" as="image" href="public/images/001_laiden.jpg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --void: #0a0a0a;
+      --ember: #c4785a;
+      --steel: #00a0c0;
+      --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+      --contact-size: 48px;
+      --bottom-padding: 40px;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--void);
+    }
+
+    #starfield {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+    }
+
+    #constellation {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+      cursor: grab;
+    }
+
+    #constellation.dragging { cursor: grabbing; }
+
+    #canvas {
+      position: absolute;
+      width: 3000px;
+      height: 3000px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .thumbnail {
+      position: absolute;
+      border-radius: 2px;
+      overflow: hidden;
+      opacity: 0.05;
+      transition: all 400ms var(--ease-smooth);
+      cursor: pointer;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.03);
+    }
+
+    .thumbnail:hover {
+      opacity: 1;
+      transform: scale(1.15);
+      box-shadow: 0 0 25px rgba(255,255,255,0.15);
+      z-index: 100;
+    }
+
+    .thumbnail.visited {
+      opacity: 0.12;
+    }
+
+    .thumbnail.visited:hover {
+      opacity: 1;
+    }
+
+    .thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .fullscreen-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--void);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .fullscreen-overlay.active { display: flex; }
+
+    .fullscreen-overlay .slide {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .fullscreen-overlay img {
+      max-width: 90%;
+      max-height: 90%;
+      object-fit: contain;
+      opacity: 0;
+      transition: opacity 1200ms var(--ease-smooth);
+    }
+
+    .fullscreen-overlay.active img {
+      opacity: 1;
+    }
+
+    .fullscreen-nav {
+      position: absolute;
+      bottom: var(--bottom-padding);
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      z-index: 1001;
+    }
+
+    .fullscreen-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      border: none;
+      cursor: pointer;
+      transition: all 300ms var(--ease-smooth);
+      padding: 0;
+    }
+
+    .fullscreen-dot:hover { background: rgba(255,255,255,0.35); }
+    .fullscreen-dot.active { background: rgba(255,255,255,0.5); box-shadow: 0 0 8px rgba(255,255,255,0.15); }
+
+    .close-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      cursor: pointer;
+      z-index: 1002;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .close-btn::before,
+    .close-btn::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 1px;
+      background: rgba(255,255,255,0.3);
+    }
+
+    .close-btn::before { transform: rotate(45deg); }
+    .close-btn::after { transform: rotate(-45deg); }
+
+    .close-btn:hover { background: rgba(255,255,255,0.1); }
+
+    .info-hint {
+      position: fixed;
+      bottom: var(--bottom-padding);
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: rgba(255,255,255,0.1);
+      text-transform: uppercase;
+      z-index: 10;
+      transition: opacity 600ms var(--ease-smooth);
+    }
+
+    .contact {
+      position: fixed;
+      bottom: var(--bottom-padding);
+      right: var(--bottom-padding);
+      width: var(--contact-size);
+      height: var(--contact-size);
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 400ms var(--ease-smooth);
+      z-index: 20;
+      text-decoration: none;
+    }
+
+    .contact:hover {
+      background: var(--ember);
+      border-color: var(--ember);
+      box-shadow: 0 0 24px rgba(196,120,90,0.35);
+      transform: scale(1.08);
+    }
+
+    .contact svg {
+      width: 20px;
+      height: 20px;
+      stroke: rgba(255,255,255,0.5);
+      fill: none;
+      stroke-width: 1.5;
+    }
+
+    .contact:hover svg { stroke: #fff; }
+
+    @media (max-width: 768px) {
+      :root { --contact-size: 56px; --bottom-padding: 60px; }
+      .info-hint { bottom: 50px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="starfield"></canvas>
+  <div id="constellation">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <div class="fullscreen-overlay" id="fullscreen">
+    <button class="close-btn" id="close-btn"></button>
+    <div class="slide">
+      <img id="fullscreen-img" src="" alt="">
+    </div>
+    <div class="fullscreen-nav" id="fullscreen-nav"></div>
+  </div>
+
+  <div class="info-hint">drag to explore · click to view</div>
+
+  <a href="https://instagram.com/laiden" class="contact" aria-label="Send message on Instagram" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24">
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+    </svg>
+  </a>
+
+  <script>
+    const images = [
+      'public/images/001_laiden.jpg', 'public/images/002_laiden.jpg', 'public/images/003_laiden.jpg',
+      'public/images/004_laiden.jpg', 'public/images/005_laiden.jpg', 'public/images/006_laiden.jpg',
+      'public/images/007_laiden.jpg', 'public/images/008_laiden.jpg', 'public/images/009_laiden.jpg',
+      'public/images/010_laiden.jpg', 'public/images/011_laiden.jpg', 'public/images/012_laiden.jpg',
+      'public/images/013_laiden.jpg', 'public/images/014_laiden.jpg', 'public/images/015_laiden.jpg',
+      'public/images/016_laiden.jpg', 'public/images/017_laiden.jpg', 'public/images/018_laiden.jpg',
+      'public/images/019_laiden.jpg', 'public/images/020_laiden.jpg', 'public/images/021_laiden.jpg',
+      'public/images/022_laiden.jpg', 'public/images/023_laiden.jpg', 'public/images/024_laiden.jpg',
+      'public/images/025_laiden.jpg', 'public/images/026_laiden.jpg', 'public/images/027_laiden.png',
+      'public/images/028_laiden.png', 'public/images/029_laiden.png', 'public/images/030_laiden.png',
+      'public/images/031_laiden.png', 'public/images/032_laiden.png', 'public/images/033_laiden.png',
+      'public/images/034_laiden.png', 'public/images/035_laiden.png', 'public/images/036_laiden.png',
+      'public/images/037_laiden.png', 'public/images/038_laiden.png', 'public/images/039_laiden.png'
+    ];
+
+    const warmthData = [
+      1.15, 1.03, 1.46, 1.01, 2.92, 1.01, 3.77, 1.84, 3.90, 6.12, 0.13, 0.21, 0.41, 1.56,
+      0.14, 2.51, 0.41, 1.83, 0.30, 0.13, 1.18, 0.46, 0.17, 0.40, 0.57, 0.72, 1.50, 3.29,
+      2.75, 1.11, 0.34, 0.73, 2.18, 1.03, 0.10, 0.32, 0.92, 0.69, 1.07
+    ];
+
+    const brightnessData = [
+      54, 86, 71, 117, 57, 117, 45, 90, 13, 37, 28, 16, 57, 46, 58, 17, 114, 26, 47, 18, 30,
+      52, 44, 24, 35, 52, 90, 36, 51, 61, 26, 59, 46, 122, 29, 59, 39, 40, 55
+    ];
+
+    const saturationData = [
+      13, 3, 32, 1, 66, 1, 74, 46, 74, 84, 87, 79, 72, 36, 86, 64, 59, 46, 70, 87, 39,
+      54, 83, 64, 52, 36, 33, 70, 64, 33, 66, 40, 54, 3, 90, 80, 35, 58, 29
+    ];
+
+    const minWarmth = 0.10, maxWarmth = 6.12;
+    const minBright = 13, maxBright = 122;
+    const minSat = 1, maxSat = 90;
+
+    function getPosition(index) {
+      const warmth = warmthData[index];
+      const brightness = brightnessData[index];
+      const saturation = saturationData[index];
+
+      const x = 10 + ((warmth - minWarmth) / (maxWarmth - minWarmth)) * 80;
+      const y = 80 - ((brightness - minBright) / (maxBright - minBright)) * 60;
+      const size = 60 + ((saturation - minSat) / (maxSat - minSat)) * 40;
+
+      return { x, y, size };
+    }
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const starfield = document.getElementById('starfield');
+    const starCtx = starfield.getContext('2d');
+    const constellation = document.getElementById('constellation');
+
+    const state = {
+      panX: 0,
+      panY: 0,
+      isDragging: false,
+      dragStartX: 0,
+      dragStartY: 0,
+      visited: new Set(),
+      fullscreenIndex: 0,
+      visitedPath: []
+    };
+
+    const positions = images.map((_, i) => getPosition(i));
+    const thumbnails = [];
+
+    function resize() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      canvas.width = 3000;
+      canvas.height = 3000;
+      starfield.width = w;
+      starfield.height = h;
+    }
+
+    function drawStarfield() {
+      starCtx.clearRect(0, 0, starfield.width, starfield.height);
+      for (let i = 0; i < 200; i++) {
+        const x = Math.random() * starfield.width;
+        const y = Math.random() * starfield.height;
+        const size = Math.random() * 1.5;
+        const opacity = 0.02 + Math.random() * 0.03;
+        starCtx.beginPath();
+        starCtx.arc(x, y, size, 0, Math.PI * 2);
+        starCtx.fillStyle = `rgba(255,255,255,${opacity})`;
+        starCtx.fill();
+      }
+    }
+
+    function drawConnections() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const lineOpacity = state.visited.size > 1 ? 0.08 : 0.02;
+      const activeOpacity = 0.15;
+
+      ctx.strokeStyle = `rgba(255,255,255,${lineOpacity})`;
+      ctx.lineWidth = 1;
+
+      if (state.visitedPath.length > 1) {
+        ctx.beginPath();
+        const first = positions[state.visitedPath[0]];
+        const firstX = (first.x / 100) * canvas.width;
+        const firstY = (first.y / 100) * canvas.height;
+        ctx.moveTo(firstX, firstY);
+
+        for (let i = 1; i < state.visitedPath.length; i++) {
+          const pos = positions[state.visitedPath[i]];
+          const x = (pos.x / 100) * canvas.width;
+          const y = (pos.y / 100) * canvas.height;
+          ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = `rgba(255,255,255,${activeOpacity})`;
+        ctx.stroke();
+      }
+    }
+
+    function buildThumbnails() {
+      const canvasContainer = canvas.parentElement;
+
+      positions.forEach((pos, i) => {
+        const thumb = document.createElement('div');
+        thumb.className = 'thumbnail';
+        thumb.style.left = (pos.x / 100 * canvas.width) + 'px';
+        thumb.style.top = (pos.y / 100 * canvas.height) + 'px';
+        thumb.style.width = pos.size + 'px';
+        thumb.style.height = pos.size + 'px';
+
+        const img = document.createElement('img');
+        img.src = images[i];
+        img.loading = i < 5 ? 'eager' : 'lazy';
+        img.alt = '';
+
+        thumb.appendChild(img);
+        canvasContainer.appendChild(thumb);
+
+        thumb.addEventListener('click', () => openFullscreen(i));
+
+        thumbnails.push(thumb);
+      });
+    }
+
+    function updatePan() {
+      const x = 50 + state.panX;
+      const y = 50 + state.panY;
+      canvas.style.left = x + '%';
+      canvas.style.top = y + '%';
+    }
+
+    function openFullscreen(index) {
+      state.fullscreenIndex = index;
+      state.visited.add(index);
+      if (state.visitedPath.length === 0 || state.visitedPath[state.visitedPath.length - 1] !== index) {
+        state.visitedPath.push(index);
+      }
+
+      thumbnails.forEach(t => t.classList.remove('visited'));
+      state.visited.forEach(i => thumbnails[i].classList.add('visited'));
+
+      document.getElementById('fullscreen-img').src = images[index];
+      document.getElementById('fullscreen').classList.add('active');
+      drawConnections();
+      buildFullscreenNav();
+    }
+
+    function closeFullscreen() {
+      document.getElementById('fullscreen').classList.remove('active');
+    }
+
+    function buildFullscreenNav() {
+      const nav = document.getElementById('fullscreen-nav');
+      nav.innerHTML = '';
+      images.forEach((_, i) => {
+        const dot = document.createElement('button');
+        dot.className = 'fullscreen-dot' + (i === state.fullscreenIndex ? ' active' : '');
+        dot.addEventListener('click', () => {
+          state.fullscreenIndex = i;
+          document.getElementById('fullscreen-img').src = images[i];
+          document.querySelectorAll('.fullscreen-dot').forEach((d, j) => d.classList.toggle('active', j === i));
+        });
+        nav.appendChild(dot);
+      });
+    }
+
+    function nextFullscreen() {
+      const next = (state.fullscreenIndex + 1) % images.length;
+      openFullscreen(next);
+    }
+
+    function prevFullscreen() {
+      const prev = (state.fullscreenIndex - 1 + images.length) % images.length;
+      openFullscreen(prev);
+    }
+
+    function handleKey(e) {
+      if (!document.getElementById('fullscreen').classList.contains('active')) return;
+      if (e.key === 'Escape') closeFullscreen();
+      else if (e.key === 'ArrowRight' || e.key === ' ') nextFullscreen();
+      else if (e.key === 'ArrowLeft') prevFullscreen();
+    }
+
+    let isDragging = false;
+    let startX, startY;
+    let lastX = 0, lastY = 0;
+    const maxPan = 30;
+
+    constellation.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      lastX = state.panX;
+      lastY = state.panY;
+      constellation.classList.add('dragging');
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const dx = (e.clientX - startX) / window.innerWidth * 100;
+      const dy = (e.clientY - startY) / window.innerHeight * 100;
+      state.panX = Math.max(-maxPan, Math.min(maxPan, lastX - dx));
+      state.panY = Math.max(-maxPan, Math.min(maxPan, lastY - dy));
+      updatePan();
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+      constellation.classList.remove('dragging');
+    });
+
+    let touchStartX, touchStartY, touchPanX, touchPanY;
+    constellation.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchPanX = state.panX;
+      touchPanY = state.panY;
+    }, { passive: true });
+
+    constellation.addEventListener('touchmove', (e) => {
+      const dx = (e.touches[0].clientX - touchStartX) / window.innerWidth * 100;
+      const dy = (e.touches[0].clientY - touchStartY) / window.innerHeight * 100;
+      state.panX = Math.max(-maxPan, Math.min(maxPan, touchPanX - dx));
+      state.panY = Math.max(-maxPan, Math.min(maxPan, touchPanY - dy));
+      updatePan();
+    }, { passive: true });
+
+    document.getElementById('close-btn').addEventListener('click', closeFullscreen);
+    document.addEventListener('keydown', handleKey);
+
+    document.querySelector('.info-hint').style.opacity = '0';
+    setTimeout(() => {
+      document.querySelector('.info-hint').style.opacity = '1';
+      setTimeout(() => {
+        document.querySelector('.info-hint').style.opacity = '0';
+      }, 4000);
+    }, 1000);
+
+    resize();
+    drawStarfield();
+    buildThumbnails();
+    drawConnections();
+    updatePan();
+
+    window.addEventListener('resize', () => { resize(); drawStarfield(); });
+  </script>
+</body>
+</html>

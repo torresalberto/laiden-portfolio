@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>laiden</title>
+  <link rel="preload" as="image" href="public/images/001_laiden.jpg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --void: #0a0a0a;
+      --ember: #c4785a;
+      --steel: #00a0c0;
+      --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+      --frame-height: 70vh;
+      --contact-size: 48px;
+      --bottom-padding: 40px;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--void);
+    }
+
+    #film-grain {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 100;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    }
+
+    #filmstrip-container {
+      position: fixed;
+      inset: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      align-items: center;
+      background: var(--void);
+      scrollbar-width: none;
+    }
+
+    #filmstrip-container::-webkit-scrollbar { display: none; }
+
+    #filmstrip {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      padding: 0 50vw;
+    }
+
+    .film-frame {
+      flex-shrink: 0;
+      height: var(--frame-height);
+      margin: 0 15px;
+      position: relative;
+      border: 2px solid #111;
+      scroll-snap-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 600ms var(--ease-smooth);
+      opacity: 0.35;
+    }
+
+    .film-frame.active {
+      opacity: 1;
+      transform: scale(1.02);
+      box-shadow: 0 0 50px rgba(0,0,0,0.85), 0 0 100px rgba(0,0,0,0.4);
+    }
+
+    .film-frame img {
+      max-height: calc(var(--frame-height) - 50px);
+      max-width: calc(100vw - 120px);
+      object-fit: contain;
+    }
+
+    .film-frame::before,
+    .film-frame::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 20px;
+      background: repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent 6px,
+        rgba(255,255,255,0.03) 6px,
+        rgba(255,255,255,0.03) 8px,
+        transparent 8px,
+        transparent 18px
+      );
+    }
+
+    .film-frame::before { top: -20px; }
+    .film-frame::after { bottom: -20px; }
+
+    #progress-bar {
+      position: fixed;
+      top: 20px;
+      left: 5%;
+      right: 5%;
+      height: 2px;
+      background: rgba(255,255,255,0.06);
+      z-index: 50;
+    }
+
+    #progress-fill {
+      height: 100%;
+      width: 0%;
+      transition: width 300ms var(--ease-smooth);
+      background: linear-gradient(90deg, var(--steel), var(--ember));
+    }
+
+    .section-label {
+      position: fixed;
+      top: 30px;
+      font-size: 9px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.12);
+      z-index: 50;
+      transition: all 600ms var(--ease-smooth);
+    }
+
+    .section-label.warm { right: 8%; color: rgba(196,120,90,0.4); }
+    .section-label.cool { left: 8%; color: rgba(0,160,192,0.4); }
+
+    .contact {
+      position: fixed;
+      bottom: var(--bottom-padding);
+      right: var(--bottom-padding);
+      width: var(--contact-size);
+      height: var(--contact-size);
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 400ms var(--ease-smooth);
+      z-index: 60;
+      text-decoration: none;
+    }
+
+    .contact:hover {
+      background: var(--ember);
+      border-color: var(--ember);
+      box-shadow: 0 0 24px rgba(196,120,90,0.35);
+      transform: scale(1.08);
+    }
+
+    .contact svg {
+      width: 20px;
+      height: 20px;
+      stroke: rgba(255,255,255,0.5);
+      fill: none;
+      stroke-width: 1.5;
+    }
+
+    .contact:hover svg { stroke: #fff; }
+
+    .film-marker {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 8px;
+      letter-spacing: 4px;
+      color: rgba(255,255,255,0.08);
+      text-transform: uppercase;
+      z-index: 50;
+    }
+
+    @media (max-width: 768px) {
+      :root { --contact-size: 56px; --bottom-padding: 60px; --frame-height: 60vh; }
+      .film-frame { margin: 0 10px; }
+      .section-label { font-size: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="film-grain"></div>
+  <div id="progress-bar"><div id="progress-fill"></div></div>
+  <div class="section-label warm" id="label-warm">warm</div>
+  <div class="section-label cool" id="label-cool">cool</div>
+
+  <div id="filmstrip-container">
+    <div id="filmstrip"></div>
+  </div>
+
+  <div class="film-marker" id="film-marker">frame <span id="frame-number">001</span></div>
+
+  <a href="https://instagram.com/laiden" class="contact" aria-label="Send message on Instagram" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24">
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+    </svg>
+  </a>
+
+  <script>
+    const images = [
+      'public/images/001_laiden.jpg', 'public/images/002_laiden.jpg', 'public/images/003_laiden.jpg',
+      'public/images/004_laiden.jpg', 'public/images/005_laiden.jpg', 'public/images/006_laiden.jpg',
+      'public/images/007_laiden.jpg', 'public/images/008_laiden.jpg', 'public/images/009_laiden.jpg',
+      'public/images/010_laiden.jpg', 'public/images/011_laiden.jpg', 'public/images/012_laiden.jpg',
+      'public/images/013_laiden.jpg', 'public/images/014_laiden.jpg', 'public/images/015_laiden.jpg',
+      'public/images/016_laiden.jpg', 'public/images/017_laiden.jpg', 'public/images/018_laiden.jpg',
+      'public/images/019_laiden.jpg', 'public/images/020_laiden.jpg', 'public/images/021_laiden.jpg',
+      'public/images/022_laiden.jpg', 'public/images/023_laiden.jpg', 'public/images/024_laiden.jpg',
+      'public/images/025_laiden.jpg', 'public/images/026_laiden.jpg', 'public/images/027_laiden.png',
+      'public/images/028_laiden.png', 'public/images/029_laiden.png', 'public/images/030_laiden.png',
+      'public/images/031_laiden.png', 'public/images/032_laiden.png', 'public/images/033_laiden.png',
+      'public/images/034_laiden.png', 'public/images/035_laiden.png', 'public/images/036_laiden.png',
+      'public/images/037_laiden.png', 'public/images/038_laiden.png', 'public/images/039_laiden.png'
+    ];
+
+    const warmthData = [
+      1.15, 1.03, 1.46, 1.01, 2.92, 1.01, 3.77, 1.84, 3.90, 6.12, 0.13, 0.21, 0.41, 1.56,
+      0.14, 2.51, 0.41, 1.83, 0.30, 0.13, 1.18, 0.46, 0.17, 0.40, 0.57, 0.72, 1.50, 3.29,
+      2.75, 1.11, 0.34, 0.73, 2.18, 1.03, 0.10, 0.32, 0.92, 0.69, 1.07
+    ];
+
+    function isWarm(index) { return warmthData[index] > 1.0; }
+
+    const container = document.getElementById('filmstrip');
+    const filmstripContainer = document.getElementById('filmstrip-container');
+    const progressFill = document.getElementById('progress-fill');
+    const frameNumber = document.getElementById('frame-number');
+    const labelWarm = document.getElementById('label-warm');
+    const labelCool = document.getElementById('label-cool');
+
+    const state = {
+      currentIndex: 0,
+      isDragging: false,
+      dragStartX: 0,
+      scrollStartX: 0,
+      autoDriftTimer: null,
+      isPaused: false
+    };
+
+    function buildFilmstrip() {
+      images.forEach((src, i) => {
+        const frame = document.createElement('div');
+        frame.className = 'film-frame' + (i === 0 ? ' active' : '');
+        frame.innerHTML = `<img src="${src}" alt="" loading="${i < 3 ? 'eager' : 'lazy'}">`;
+        container.appendChild(frame);
+      });
+
+      const firstFrame = container.querySelector('.film-frame');
+      container.insertBefore(firstFrame.cloneNode(true), container.firstChild);
+      const lastFrame = container.querySelectorAll('.film-frame')[images.length];
+      container.appendChild(lastFrame.cloneNode(true));
+    }
+
+    function getFrames() { return container.querySelectorAll('.film-frame'); }
+
+    function updateActiveFrame() {
+      const scrollLeft = filmstripContainer.scrollLeft;
+      const frameWidth = getFrames()[0].offsetWidth + 30;
+      const currentIndex = Math.round(scrollLeft / frameWidth);
+      const clampedIndex = Math.max(1, Math.min(images.length, currentIndex));
+
+      const realIndex = clampedIndex - 1;
+      state.currentIndex = realIndex;
+
+      getFrames().forEach((frame, i) => {
+        frame.classList.toggle('active', i === clampedIndex);
+      });
+
+      const pct = ((realIndex + 1) / images.length) * 100;
+      progressFill.style.width = pct + '%';
+      frameNumber.textContent = String(realIndex + 1).padStart(3, '0');
+
+      const warm = isWarm(realIndex);
+      labelWarm.style.opacity = warm ? '1' : '0.3';
+      labelCool.style.opacity = warm ? '0.3' : '1';
+    }
+
+    function scrollToFrame(index) {
+      const frameWidth = getFrames()[0].offsetWidth + 30;
+      filmstripContainer.scrollTo({ left: (index + 1) * frameWidth, behavior: 'smooth' });
+    }
+
+    function next() {
+      const nextIndex = (state.currentIndex + 1) % images.length;
+      scrollToFrame(nextIndex);
+    }
+
+    function prev() {
+      const prevIndex = (state.currentIndex - 1 + images.length) % images.length;
+      scrollToFrame(prevIndex);
+    }
+
+    function startAutoDrift() {
+      stopAutoDrift();
+      state.autoDriftTimer = setInterval(() => {
+        if (!state.isDragging && !state.isPaused) {
+          filmstripContainer.scrollLeft += 0.5;
+        }
+      }, 50);
+    }
+
+    function stopAutoDrift() {
+      if (state.autoDriftTimer) { clearInterval(state.autoDriftTimer); state.autoDriftTimer = null; }
+    }
+
+    function pauseDrift() { state.isPaused = true; stopAutoDrift(); }
+    function resumeDrift() { state.isPaused = false; startAutoDrift(); }
+
+    filmstripContainer.addEventListener('mousedown', (e) => {
+      state.isDragging = true;
+      state.dragStartX = e.pageX;
+      state.scrollStartX = filmstripContainer.scrollLeft;
+      pauseDrift();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!state.isDragging) return;
+      const dx = e.pageX - state.dragStartX;
+      filmstripContainer.scrollLeft = state.scrollStartX - dx;
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (state.isDragging) {
+        state.isDragging = false;
+        setTimeout(() => { if (!state.isPaused) startAutoDrift(); }, 2000);
+      }
+    });
+
+    filmstripContainer.addEventListener('touchstart', (e) => {
+      pauseDrift();
+    }, { passive: true });
+
+    filmstripContainer.addEventListener('touchend', () => {
+      setTimeout(resumeDrift, 2000);
+    }, { passive: true });
+
+    filmstripContainer.addEventListener('scroll', () => {
+      const scrollLeft = filmstripContainer.scrollLeft;
+      const maxScroll = filmstripContainer.scrollWidth - filmstripContainer.clientWidth;
+      const frameWidth = getFrames()[0].offsetWidth + 30;
+
+      if (scrollLeft < 50) {
+        filmstripContainer.scrollLeft = maxScroll - 100;
+      } else if (scrollLeft > maxScroll - 100) {
+        filmstripContainer.scrollLeft = 50;
+      }
+
+      updateActiveFrame();
+    });
+
+    function handleKey(e) {
+      if (e.key === 'ArrowRight') next();
+      else if (e.key === 'ArrowLeft') prev();
+      else if (e.key === ' ') { e.preventDefault(); next(); }
+    }
+
+    document.getElementById('filmstrip-container').addEventListener('click', (e) => {
+      if (e.target.closest('.contact')) return;
+      const rect = filmstripContainer.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      if (clickX > rect.width / 2) next();
+      else prev();
+    });
+
+    document.addEventListener('keydown', handleKey);
+
+    const contact = document.querySelector('.contact');
+    contact.addEventListener('mouseenter', pauseDrift);
+    contact.addEventListener('mouseleave', resumeDrift);
+
+    buildFilmstrip();
+    updateActiveFrame();
+    setTimeout(() => {
+      filmstripContainer.scrollLeft = getFrames()[0].offsetWidth + 30;
+      startAutoDrift();
+    }, 100);
+  </script>
+</body>
+</html>
